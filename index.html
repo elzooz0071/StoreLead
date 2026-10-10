@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>النظام الشامل لإدارة المطاعم والفروع</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #FF4757;
+            --primary-hover: #FF6B81;
+            --secondary: #1E272C;
+            --bg: #F4F6F9;
+            --card-bg: #FFFFFF;
+            --text-main: #2D3436;
+            --text-muted: #636E72;
+            --success: #2ED573;
+            --border-radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); padding: 20px; }
+
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        .login-screen {
+            max-width: 420px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            padding: 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            text-align: center;
+        }
+        .login-screen h2 { margin-bottom: 20px; color: var(--secondary); font-weight: 800; }
+
+        header {
+            background: var(--secondary);
+            color: white;
+            padding: 18px 25px;
+            border-radius: var(--border-radius);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .logout-btn { background: #E74C3C; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            border: 1px solid #E2E8F0;
+        }
+        h3 { color: var(--secondary); margin-bottom: 15px; font-weight: 700; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 700; margin-bottom: 6px; font-size: 14px; color: var(--secondary); }
+        input[type="text"], input[type="password"], input[type="email"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(255,71,87,0.15); }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--secondary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: #E74C3C; color: white; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            background: #E2E8F0;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: 0.2s;
+            font-size: 13px;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-card { background: linear-gradient(135deg, #1E272C, #353b48); color: white; padding: 20px; border-radius: 12px; text-align: center; }
+        .stat-card h4 { font-size: 14px; opacity: 0.8; margin-bottom: 8px; }
+        .stat-card span { font-size: 24px; font-weight: 800; color: #ff4757; }
+
+        .badge { background: var(--success); color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+        .hidden { display: none; }
+        .item-box { background: #F8FAFC; border: 1px solid #E2E8F0; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        
+        .notification-banner { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="loginScreen" class="login-screen">
+        <h2>🔐 تسجيل الدخول للنظام</h2>
+        <div class="form-group">
+            <label>اسم المستخدم:</label>
+            <input type="text" id="loginUsername" placeholder="admin أو branch1">
+        </div>
+        <div class="form-group">
+            <label>كلمة المرور:</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn" onclick="handleLogin()">دخول</button>
+        
+        <div style="margin-top: 15px; text-align: right;">
+            <a href="#" onclick="forgotPassword()" style="font-size: 13px; color: var(--primary); text-decoration: none;">هل نسيت كلمة المرور؟</a>
+        </div>
+    </div>
+
+    <!-- لوحة التطبيق -->
+    <div id="mainApp" class="hidden">
+        <header>
+            <h1 id="appTitle">نظام إدارة المطعم</h1>
+            <div class="user-info">
+                <span id="currentUserLabel" style="font-weight: 700;"></span>
+                <button class="logout-btn" onclick="handleLogout()">خروج</button>
+            </div>
+        </header>
+
+        <!-- أ) لوحة الأدمن -->
+        <div id="adminPanel" class="hidden">
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchAdminTab('analytics')">📈 التحليلات</button>
+                <button class="tab-btn" onclick="switchAdminTab('reports')">📊 التقارير والإكسل</button>
+                <button class="tab-btn" onclick="switchAdminTab('checklist')">✅ إدارة التشيك ليست</button>
+                <button class="tab-btn" onclick="switchAdminTab('branches')">🏪 الفروع والباسوردات</button>
+                <button class="tab-btn" onclick="switchAdminTab('tasks')">📋 إسناد المهام</button>
+            </div>
+
+            <!-- التحليلات -->
+            <div id="adminTabAnalytics" class="card">
+                <h3>📈 لوحة التحليلات والتجميع العام</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>إجمالي التقارير</h4>
+                        <span id="statTotalReports">0</span>
+                    </div>
+                    <div class="stat-card">
+                        <h4>الفروع النشطة</h4>
+                        <span id="statActiveBranches">0 / 10</span>
+                    </div>
+                </div>
+                <div id="analyticsDetails" style="margin-top: 20px;"></div>
+            </div>
+
+            <!-- التقارير -->
+            <div id="adminTabReports" class="card hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>📥 تقارير الفروع المفصلة</h3>
+                    <button class="btn btn-success" style="width: auto; padding: 8px 15px; font-size: 13px;" onclick="exportToExcel()">📥 تحميل Excel</button>
+                </div>
+                <div id="adminReportsList">
+                    <p style="color: var(--text-muted); text-align: center;">لا توجد تقارير واردة بعد.</p>
+                </div>
+            </div>
+
+            <!-- إدارة التشيك ليست (جديد) -->
+            <div id="adminTabChecklist" class="card hidden">
+                <h3>✅ تعديل وإضافة مهام التشيك ليست اليومية الثابتة</h3>
+                <div class="form-group">
+                    <label>عنوان المهمة الجديدة:</label>
+                    <input type="text" id="newChecklistTitle" placeholder="مثال: فحص جودة الزيت">
+                </div>
+                <div class="form-group">
+                    <label>وصف المهمة أو التفاصيل:</label>
+                    <input type="text" id="newChecklistDesc" placeholder="مثال: التأكد من لونه ونظافته">
+                </div>
+                <button class="btn" onclick="addChecklistTask()">إضافة إلى التشيك ليست</button>
+                
+                <h3 style="margin-top: 25px;">مهام التشيك ليست الحالية:</h3>
+                <div id="adminChecklistContainer"></div>
+            </div>
+
+            <!-- إدارة الفروع -->
+            <div id="adminTabBranches" class="card hidden">
+                <h3>🏪 إدارة أسماء الفروع وكلمات المرور الخاصة بها</h3>
+                <div id="adminBranchesManagerList"></div>
+            </div>
+
+            <!-- المهام الطارئة -->
+            <div id="adminTabTasks" class="card hidden">
+                <h3>➕ نشر مهمة طارئة للفروع (مع إرسال إشعار فوري)</h3>
+                <div class="form-group">
+                    <label>عنوان المهمة:</label>
+                    <input type="text" id="adminTaskTitle" placeholder="مثال: تنظيف صالة الاستقبال">
+                </div>
+                <div class="form-group">
+                    <label>التفاصيل:</label>
+                    <textarea id="adminTaskDesc" placeholder="اكتب التعليمات..."></textarea>
+                </div>
+                <button class="btn" onclick="createTaskAndNotify()">نشر وإرسال إشعار للفروع</button>
+            </div>
+        </div>
+
+        <!-- ب) لوحة مدير الفرع -->
+        <div id="branchPanel" class="hidden">
+            <div id="branchNotificationBanner" class="hidden notification-banner">
+                <span id="notificationText">🔔 تنبيه: أرسل الأدمن مهمة جديدة تشغيلية!</span>
+                <button onclick="dismissNotification()" style="background:none; border:none; cursor:pointer; font-weight:bold;">✕</button>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchBranchTab('reports')">📝 رفع تقرير يومي</button>
+                <button class="tab-btn" onclick="switchBranchTab('tasks')">📋 التشيك ليست اليومية</button>
+                <button class="tab-btn" onclick="switchBranchTab('settings')">⚙️ إعدادات الحساب</button>
+            </div>
+
+            <!-- رفع التقارير -->
+            <div id="branchTabReports" class="card">
+                <h3>📝 رفع تقرير يومي للإدارة</h3>
+                <div class="form-group">
+                    <label>اختر نوع التقرير:</label>
+                    <select id="reportCategorySelect">
+                        <option>تقرير المبيعات اليومية</option>
+                        <option>تقرير الهالك (Waste)</option>
+                        <option>طلبات الصيانة</option>
+                        <option>مشاكل العمالة</option>
+                        <option>تسجيل حضور وانصراف الموظفين</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>تفاصيل التقرير / الأرقام / الملاحظات:</label>
+                    <textarea id="reportDetails" placeholder="اكتب التفاصيل هنا..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>صورة أو مرفق:</label>
+                    <input type="file" id="reportFile">
+                </div>
+                <button class="btn" onclick="submitBranchReport()">إرسال التقرير</button>
+            </div>
+
+            <!-- التشيك ليست اليومية -->
+            <div id="branchTabTasks" class="card hidden">
+                <h3>📋 قائمة التشيك ليست والمهام اليومية</h3>
+                <div id="branchTasksContainer"></div>
+            </div>
+
+            <!-- إعدادات الحساب -->
+            <div id="branchTabSettings" class="card hidden">
+                <h3>⚙️ إعدادات الحساب وتغيير كلمة المرور</h3>
+                <div class="form-group">
+                    <label>البريد الإلكتروني:</label>
+                    <input type="email" id="branchEmailInput">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور الجديدة:</label>
+                    <input type="password" id="branchNewPassInput" placeholder="ادخل كلمة المرور الجديدة">
+                </div>
+                <button class="btn" onclick="saveBranchSettings()">حفظ التعديلات</button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    let usersData = {
+        'admin': { pass: 'admin123', role: 'admin', name: 'مدير المنطقة (الأدمن)', email: 'admin@fastfood.com' },
+        'branch1': { pass: '123456', role: 'branch', name: 'فرع المعادي', email: 'maadi@fastfood.com' },
+        'branch2': { pass: '123456', role: 'branch', name: 'فرع مدينة نصر', email: 'nasr@fastfood.com' },
+        'branch3': { pass: '123456', role: 'branch', name: 'فرع التجمع الخامس', email: 'tagamoa@fastfood.com' },
+        'branch4': { pass: '123456', role: 'branch', name: 'فرع المهندسين', email: 'mohandessin@fastfood.com' },
+        'branch5': { pass: '123456', role: 'branch', name: 'فرع الهرم', email: 'haram@fastfood.com' },
+        'branch6': { pass: '123456', role: 'branch', name: 'فرع الإسكندرية', email: 'alex@fastfood.com' },
+        'branch7': { pass: '123456', role: 'branch', name: 'فرع طنطا', email: 'tanta@fastfood.com' },
+        'branch8': { pass: '123456', role: 'branch', name: 'فرع المنصورة', email: 'mansoura@fastfood.com' },
+        'branch9': { pass: '123456', role: 'branch', name: 'فرع أسيوط', email: 'assiut@fastfood.com' },
+        'branch10': { pass: '123456', role: 'branch', name: 'فرع الشيخ زايد', email: 'zayed@fastfood.com' }
+    };
+
+    let dailyChecklist = [
+        { id: 1, title: 'تشغيل وتسخين الشوايات ومعدات القلي', desc: 'التأكد من درجات الحرارة القياسية للتشغيل' },
+        { id: 2, title: 'مراجعة نظافة وتبريد الثلاجات الرئيسية', desc: 'فحص الحساسات والتأكد من عدم وجود تلف' },
+        { id: 3, title: 'التاكد من زي الموظفين ونظافة منطقة الاستقبال', desc: 'التزام الفريق بمعايير جودة الفاست فود' },
+        { id: 4, title: 'جرد مخبوزات وعيش البرجر صباحاً', desc: 'تسجيل الكميات المتاحة لبدء الشفت' }
+    ];
+
+    let customAdminTasks = [];
+    let submittedReports = [];
+    let currentUser = null;
+    let hasNewNotification = false;
+
+    function handleLogin() {
+        const u = document.getElementById('loginUsername').value.trim();
+        const p = document.getElementById('loginPassword').value.trim();
+
+        if (usersData[u] && usersData[u].pass === p) {
+            currentUser = { username: u, ...usersData[u] };
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('currentUserLabel').innerText = currentUser.name;
+
+            if (currentUser.role === 'admin') {
+                document.getElementById('adminPanel').classList.remove('hidden');
+                document.getElementById('branchPanel').classList.add('hidden');
+                updateAnalytics();
+                renderAdminChecklist();
+                renderAdminBranchesList();
+            } else {
+                document.getElementById('branchPanel').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('hidden');
+                document.getElementById('branchEmailInput').value = currentUser.email || '';
+                document.getElementById('branchNewPassInput').value = '';
+                checkNotifications();
+                renderBranchTasks();
+            }
+        } else {
+            alert('اسم المستخدم أو كلمة المرور غير صحيحة!');
+        }
+    }
+
+    function handleLogout() {
+        currentUser = null;
+        document.getElementById('mainApp').classList.add('hidden');
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('loginUsername').value = '';
+        document.getElementById('loginPassword').value = '';
+    }
+
+    function forgotPassword() {
+        const emailInput = prompt('أدخل البريد الإلكتروني المسجل لاستعادة كلمة المرور:');
+        if(!emailInput) return;
+        let found = false;
+        for(let key in usersData) {
+            if(usersData[key].email.toLowerCase() === emailInput.trim().toLowerCase()) {
+                alert(`تم استرجاع الحساب بنجاح!\nكلمة المرور الحالية هي: [ ${usersData[key].pass} ]`);
+                found = true;
+                break;
+            }
+        }
+        if(!found) alert('البريد غير مسجل!');
+    }
+
+    function switchAdminTab(tab) {
+        ['analytics', 'reports', 'checklist', 'branches', 'tasks'].forEach(t => {
+            document.getElementById('adminTab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('hidden');
+        });
+        document.getElementById('adminTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+        
+        const btns = document.querySelectorAll('#adminPanel .tab-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+
+        if(tab === 'analytics') updateAnalytics();
+        if(tab === 'reports') renderAdminReports();
+        if(tab === 'checklist') renderAdminChecklist();
+        if(tab === 'branches') renderAdminBranchesList();
+    }
+
+    function switchBranchTab(tab) {
+        ['reports', 'tasks', 'settings'].forEach(t => {
+            document.getElementById('branchTab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('hidden');
+        });
+        document.getElementById('branchTab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
+        
+        const btns = document.querySelectorAll('#branchPanel .tab-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        event.target.classList.add('active');
+        if(tab === 'tasks') renderBranchTasks();
+    }
+
+    // إدارة التشيك ليست للأدمن
+    function renderAdminChecklist() {
+        const container = document.getElementById('adminChecklistContainer');
+        container.innerHTML = '';
+        if(dailyChecklist.length === 0) {
+            container.innerHTML = '<p style="color:var(--text-muted)">لا توجد مهام في التشيك ليست.</p>';
+            return;
+        }
+        dailyChecklist.forEach((item, index) => {
+            container.innerHTML += `
+                <div class="item-box" style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>${item.title}</strong>
+                        <p style="font-size:12px; color:var(--text-muted);">${item.desc}</p>
+                    </div>
+                    <button class="btn-danger" onclick="deleteChecklistTask(${index})">حذف</button>
+                </div>
+            `;
+        });
+    }
+
+    function addChecklistTask() {
+        const title = document.getElementById('newChecklistTitle').value.trim();
+        const desc = document.getElementById('newChecklistDesc').value.trim();
+        if(!title) return alert('أدخل عنوان المهمة');
+
+        dailyChecklist.push({ id: Date.now(), title, desc });
+        document.getElementById('newChecklistTitle').value = '';
+        document.getElementById('newChecklistDesc').value = '';
+        alert('تمت إضافة المهمة للتشيك ليست بنجاح وتحديثها للفروع!');
+        renderAdminChecklist();
+    }
+
+    function deleteChecklistTask(index) {
+        dailyChecklist.splice(index, 1);
+        renderAdminChecklist();
+        alert('تم الحذف بنجاح!');
+    }
+
+    function renderAdminBranchesList() {
+        const container = document.getElementById('adminBranchesManagerList');
+        container.innerHTML = '';
+        for(let key in usersData) {
+            if(usersData[key].role === 'branch') {
+                container.innerHTML += `
+                    <div class="item-box" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <div><label style="font-size:11px">اليوزر: ${key}</label><input type="text" id="name_${key}" value="${usersData[key].name}"></div>
+                        <div><label style="font-size:11px">الباسورد:</label><input type="text" id="pass_${key}" value="${usersData[key].pass}" style="width:120px"></div>
+                        <div><label style="font-size:11px">الإيميل:</label><input type="text" id="email_${key}" value="${usersData[key].email || ''}" style="width:160px"></div>
+                        <button class="btn" style="width:auto; padding:8px 12px; margin-top:15px;" onclick="updateBranchInfo('${key}')">حفظ</button>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function updateBranchInfo(key) {
+        usersData[key].name = document.getElementById(`name_${key}`).value.trim();
+        usersData[key].pass = document.getElementById(`pass_${key}`).value.trim();
+        usersData[key].email = document.getElementById(`email_${key}`).value.trim();
+        alert('تم التحديث بنجاح!');
+        renderAdminBranchesList();
+    }
+
+    function saveBranchSettings() {
+        const newPass = document.getElementById('branchNewPassInput').value.trim();
+        const newEmail = document.getElementById('branchEmailInput').value.trim();
+        if(newPass) usersData[currentUser.username].pass = newPass;
+        if(newEmail) usersData[currentUser.username].email = newEmail;
+        alert('تم حفظ الإعدادات بنجاح!');
+    }
+
+    function createTaskAndNotify() {
+        const title = document.getElementById('adminTaskTitle').value;
+        const desc = document.getElementById('adminTaskDesc').value;
+        if (!title) return alert('أدخل عنوان المهمة');
+        
+        customAdminTasks.push({ id: Date.now(), title, desc });
+        hasNewNotification = true;
+        
+        document.getElementById('adminTaskTitle').value = '';
+        document.getElementById('adminTaskDesc').value = '';
+        alert('تم نشر المهمة وإرسال إشعار فوري لجميع الفروع بنجاح!');
+    }
+
+    function checkNotifications() {
+        const banner = document.getElementById('branchNotificationBanner');
+        if (hasNewNotification) {
+            banner.classList.remove('hidden');
+        } else {
+            banner.classList.add('hidden');
+        }
+    }
+
+    function dismissNotification() {
+        hasNewNotification = false;
+        document.getElementById('branchNotificationBanner').classList.add('hidden');
+    }
+
+    function renderBranchTasks() {
+        const container = document.getElementById('branchTasksContainer');
+        container.innerHTML = '<h4 style="color:var(--secondary); margin-bottom:10px;">📌 التشيك ليست اليومية الثابتة:</h4>';
+        
+        if(dailyChecklist.length === 0) {
+            container.innerHTML += '<p style="color:var(--text-muted); margin-bottom:15px;">لا توجد مهام حالياً في التشيك ليست.</p>';
+        }
+
+        dailyChecklist.forEach(item => {
+            container.innerHTML += `
+                <div class="item-box" style="border-right: 4px solid var(--success);">
+                    <h4>${item.title}</h4>
+                    <p style="font-size: 13px; color: var(--text-muted);">${item.desc}</p>
+                    <button class="btn" style="margin-top:8px; padding:6px; font-size:13px;" onclick="alert('تم إنجاز المهمة بنجاح!')">إنجاز التشيك ليست ✅</button>
+                </div>
+            `;
+        });
+
+        if(customAdminTasks.length > 0) {
+            container.innerHTML += '<h4 style="color:var(--primary); margin:20px 0 10px 0;">🔔 مهام إضافية طارئة من الإدارة:</h4>';
+            customAdminTasks.forEach(task => {
+                container.innerHTML += `
+                    <div class="item-box" style="border-right: 4px solid var(--primary);">
+                        <h4>${task.title}</h4>
+                        <p style="font-size: 13px; color: var(--text-muted);">${task.desc}</p>
+                        <button class="btn" style="margin-top:8px; padding:6px; font-size:13px;" onclick="alert('تم تأكيد إنجاز المهمة الطارئة!')">تنفيذ المهمة الطارئة ✅</button>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    function updateAnalytics() {
+        document.getElementById('statTotalReports').innerText = submittedReports.length;
+        document.getElementById('statActiveBranches').innerText = new Set(submittedReports.map(r => r.branchName)).size + " / 10";
+        const container = document.getElementById('analyticsDetails');
+        if(submittedReports.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">لا توجد تقارير واردة بعد.</p>';
+            return;
+        }
+        container.innerHTML = '<h4>أحدث العمليات الواردة:</h4>';
+        submittedReports.slice(0, 5).forEach(r => {
+            container.innerHTML += `<div class="item-box">📌 <strong>${r.branchName}</strong> أرسل <span class="badge">${r.category}</span> الساعة ${r.time}</div>`;
+        });
+    }
+
+    function exportToExcel() {
+        if(submittedReports.length === 0) return alert('لا توجد تقارير لتصديرها!');
+        const dataToExport = submittedReports.map(r => ({ "الفرع": r.branchName, "التقرير": r.category, "التفاصيل": r.details, "الوقت": r.time }));
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "التقارير");
+        XLSX.writeFile(workbook, "Branch_Reports.xlsx");
+    }
+
+    function renderAdminReports() {
+        const container = document.getElementById('adminReportsList');
+        if (submittedReports.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">لا توجد تقارير واردة بعد.</p>';
+            return;
+        }
+        container.innerHTML = '';
+        submittedReports.forEach(rep => {
+            container.innerHTML += `
+                <div class="item-box">
+                    <div style="display:flex; justify-content:space-between;">
+                        <strong>🏪 ${rep.branchName}</strong>
+                        <span class="badge">${rep.category}</span>
+                    </div>
+                    <p style="margin: 8px 0;">${rep.details}</p>
+                    <small style="color: var(--text-muted);">الوقت: ${rep.time}</small>
+                </div>
+            `;
+        });
+    }
+
+    function submitBranchReport() {
+        const category = document.getElementById('reportCategorySelect').value;
+        const details = document.getElementById('reportDetails').value;
+        if (!details) return alert('أدخل تفاصيل التقرير');
+
+        submittedReports.unshift({
+            branchName: currentUser.name,
+            category: category,
+            details: details,
+            time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+        });
+
+        document.getElementById('reportDetails').value = '';
+        alert('تم إرسال التقرير للأدمن بنجاح!');
+    }
+</script>
+
+</body>
+</html>
